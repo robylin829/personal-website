@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>個人頁面</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link 
+    rel="stylesheet" 
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+
+</head>
+<body>
+    <nav class="fixed top-0 left-0 h-screen w-[16%] p-5 bg-gray-200">
+        <div class="relative flex flex-col gap-10">
+            <section class="mt-10 w-full flex flex-col gap-4 items-center">
+                <img src="./FB_IMG_1689556891094.jpg" alt="大頭貼" class="w-20 h-auto">
+                <h2 class="font-bold text-x1">輝夜大好</h2>
+                <ul class="flex flex-row gap-4">
+                    <li>
+                        <a herf="https://www.instagram.com">
+                            <i class="fa-brands fa-facebook"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <a herf="https://www.instagram.com">
+                            <i class="fa-brands fa-instagram"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <a herf="https://www.github.com">
+                            <i class="fa-brands fa-github"></i>
+                        </a>
+                    </li>
+                </ul>
+            </section>
+            <section class="p-4">
+                <ul class="ml-[8%] flex flex-col gap-8">
+                    <li>
+                        <a herf="#home"><i class="fa-solid fa-home mr-4"></i>Home</a>
+                    </li>
+                    <li>
+                        <a herf="#about"><i class="fa-solid fa-user mr-4 "></i>About</a>
+                    </li>
+                    <li>
+                        <a herf="#contact"><i class="fa-solid fa-home mr-4"></i>Contact</a>
+                    </li>
+                </ul>
+            </section>
+        </div>
+    </nav>
+
+    <main class="relative left-[16%] w-[84%] h-screen">
+        <section id="home" class="flex justify-center h-screen">
+            <img src="./bg.jpg" alt="偏深色背景圖" class="w-full h-auto object-cover object-center">
+            <div class="absolute top-[50%] left-[50%] -translate-x-[50%] -translate-y-[50%]">
+                <div class="relative w-full flex flex-col gap-2 items-center">
+                    <h1 class="text-5xl font-bold text-white">輝夜大好</h1>
+                    <p class="text-2xl text-white">平胸才是王道</p>
+                </div>
+            </div>
+        </section>
+        <section>
+            <section id="about" class="mt-4 mx-10">
+                <h1>About</h1>
+            </section>
+        </section>
+
+
+        <section id="contact" class="mt-4 mx-10">
+            <h1>Contact</h1>
+          </section>
+    </main>
+</body>
+</html>
