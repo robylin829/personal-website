@@ -214,7 +214,7 @@ reducedMotion.addEventListener('change', () => {
   if (reducedMotion.matches) activeAnimations.forEach(animation => animation.cancel());
 });
 
-// Load the official SoundCloud widget only after the visitor requests music.
+// Load SoundCloud on the first music click or when the hiking section enters view.
 (() => {
   const track = 'https://soundcloud.com/yuun_191224/surges-orangestar';
   const button = document.querySelector('#music-toggle');
@@ -230,6 +230,9 @@ reducedMotion.addEventListener('change', () => {
   let playing = false;
   let loading = false;
   let timeout;
+  let playbackTimeout;
+  let userControlled = false;
+  let autoAttempted = false;
 
   function setPlaying(value) {
     playing = value;
@@ -240,10 +243,23 @@ reducedMotion.addEventListener('change', () => {
     button.classList.toggle('is-playing', value);
   }
   function fail(message) {
+    clearTimeout(playbackTimeout);
     clearTimeout(timeout);
     requested = false;
     setPlaying(false);
     status.textContent = message;
+  }
+  function attemptPlayback() {
+    requested = true;
+    clearTimeout(playbackTimeout);
+    status.textContent = '準備播放… 若未開始，請點音符或播放器的播放鍵。';
+    widget.play();
+    playbackTimeout = setTimeout(() => {
+      if (requested && !playing) {
+        requested = false;
+        status.textContent = '音樂尚未開始，請點一下右下角音符或播放器的播放鍵。';
+      }
+    }, 5000);
   }
   function connectWidget() {
     if (widget || !iframe) return;
@@ -254,20 +270,25 @@ reducedMotion.addEventListener('change', () => {
       ready = true;
       status.textContent = '點音符或播放器即可播放。';
       if (requested && !panel.hidden) {
-        status.textContent = '準備播放… 若未開始，請點播放器的播放鍵。';
-        widget.play();
+        attemptPlayback();
       }
     });
     widget.bind(events.PLAY, () => {
+      clearTimeout(playbackTimeout);
       clearTimeout(timeout);
       requested = true;
       setPlaying(true);
       status.textContent = '播放中 · 再點音符即可暫停';
     });
     widget.bind(events.PAUSE, () => {
+      const wasPlaying = playing;
+      clearTimeout(playbackTimeout);
+      userControlled = true;
       requested = false;
       setPlaying(false);
-      status.textContent = '已暫停 · 點音符繼續播放';
+      status.textContent = wasPlaying
+        ? '已暫停 · 點音符繼續播放'
+        : '音樂尚未開始，請點一下右下角音符或播放器的播放鍵。';
     });
     widget.bind(events.FINISH, () => {
       requested = false;
@@ -302,6 +323,8 @@ reducedMotion.addEventListener('change', () => {
   }
   button.hidden = false;
   button.addEventListener('click', () => {
+    userControlled = true;
+    clearTimeout(playbackTimeout);
     panel.hidden = false;
     button.setAttribute('aria-expanded', 'true');
     if (ready) {
@@ -310,8 +333,7 @@ reducedMotion.addEventListener('change', () => {
         widget.pause();
       } else {
         requested = true;
-        status.textContent = '準備播放… 若未開始，請點播放器的播放鍵。';
-        widget.play();
+        attemptPlayback();
       }
     } else {
       requested = !requested;
@@ -320,6 +342,8 @@ reducedMotion.addEventListener('change', () => {
     }
   });
   function closePanel() {
+    userControlled = true;
+    clearTimeout(playbackTimeout);
     requested = false;
     if (widget) widget.pause();
     // If the API failed, unload the iframe so a native playback cannot continue unseen.
@@ -333,6 +357,23 @@ reducedMotion.addEventListener('change', () => {
     panel.hidden = true;
     button.setAttribute('aria-expanded', 'false');
     button.focus();
+  }
+  // One attempt per page visit; a manual play, pause or close takes precedence.
+  const hikingSection = document.querySelector('#life');
+  if (hikingSection && 'IntersectionObserver' in window) {
+    const musicObserver = new IntersectionObserver(entries => {
+      if (!entries.some(entry => entry.isIntersecting && entry.intersectionRatio >= 0.2)) return;
+      musicObserver.disconnect();
+      if (autoAttempted || userControlled || playing || requested) return;
+      autoAttempted = true;
+      requested = true;
+      panel.hidden = false;
+      button.setAttribute('aria-expanded', 'true');
+      status.textContent = '讓音樂陪你看山，正在準備播放…';
+      if (ready) attemptPlayback();
+      else loadPlayer();
+    }, { threshold: 0.2 });
+    musicObserver.observe(hikingSection);
   }
   close.addEventListener('click', closePanel);
   document.addEventListener('keydown', event => {
