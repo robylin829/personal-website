@@ -51,7 +51,7 @@
   .project-body h3 { font-size: 21px; }
 }
 
-/* Click-to-play music: a visible YouTube player, never loaded before interaction. */
+/* Click-to-play music: a visible SoundCloud player, never loaded before interaction. */
 .music-toggle { position: fixed; bottom: max(22px, env(safe-area-inset-bottom)); right: 24px; z-index: 32; width: 52px; height: 52px; border: 1px solid #a3b09b; border-radius: 50%; color: var(--green); background: var(--paper); box-shadow: 0 4px 20px #253d3426; font-size: 25px; cursor: pointer; display: grid; place-items: center; transition: background .2s, color .2s; }
 .music-toggle.is-playing { color: white; background: var(--green); }
 .music-toggle.is-playing span { animation: music-sway 2s ease-in-out infinite; }
@@ -60,8 +60,8 @@
 .music-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
 .music-heading h2 { font: 600 13px "Microsoft JhengHei",sans-serif; letter-spacing: 1px; }
 .music-heading button { width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--soft); color: var(--ink); font-size: 22px; cursor: pointer; }
-.music-video { width: 100%; height: 200px; background: #e3e9dd; }
-.music-video iframe { display: block; width: 100%; height: 200px; border: 0; }
+.music-audio { width: 100%; height: 166px; background: #e3e9dd; }
+.music-audio iframe { display: block; width: 100%; height: 166px; border: 0; }
 .music-panel p { font-size: 11px; line-height: 1.8; margin-top: 10px; color: var(--muted); }
 .music-panel > a { font-size: 11px; border-bottom: 1px solid var(--line); display: inline-block; margin-top: 7px; }
 @media (max-width: 760px) { .music-toggle { right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); } .music-panel { right: 16px; bottom: 80px; } }

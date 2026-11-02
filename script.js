@@ -214,30 +214,30 @@ reducedMotion.addEventListener('change', () => {
   if (reducedMotion.matches) activeAnimations.forEach(animation => animation.cancel());
 });
 
-// Load YouTube only after a visitor requests music. Keep its player visible while playing.
+// Load the official SoundCloud widget only after the visitor requests music.
 (() => {
+  const track = 'https://soundcloud.com/yuun_191224/surges-orangestar';
   const button = document.querySelector('#music-toggle');
   const panel = document.querySelector('#music-panel');
   const close = document.querySelector('#music-close');
   const status = document.querySelector('#music-status');
-  if (!button || !panel) return;
-  let player;
+  const container = document.querySelector('#soundcloud-container');
+  if (!button || !panel || !container) return;
+  let widget;
+  let iframe;
   let ready = false;
   let requested = false;
+  let playing = false;
   let loading = false;
-  let embeddingDenied = false;
   let timeout;
 
-  function setPlaying(playing) {
-    button.setAttribute('aria-pressed', String(playing));
-    const label = embeddingDenied ? '開啟音樂面板' : playing ? '暫停背景音樂' : '播放背景音樂';
+  function setPlaying(value) {
+    playing = value;
+    button.setAttribute('aria-pressed', String(value));
+    const label = value ? '暫停背景音樂' : '播放背景音樂';
     button.setAttribute('aria-label', label);
     button.title = label;
-    button.classList.toggle('is-playing', playing);
-  }
-  function showPanel() {
-    panel.hidden = false;
-    button.setAttribute('aria-expanded', 'true');
+    button.classList.toggle('is-playing', value);
   }
   function fail(message) {
     clearTimeout(timeout);
@@ -245,78 +245,90 @@ reducedMotion.addEventListener('change', () => {
     setPlaying(false);
     status.textContent = message;
   }
-  function createPlayer() {
-    clearTimeout(timeout);
-    if (player) return;
-    const vars = { playsinline: 1, controls: 1, loop: 1, playlist: 'QvWsAIc5mO8' };
-    if (location.protocol === 'https:' || location.protocol === 'http:') vars.origin = location.origin;
-    player = new YT.Player('youtube-player', {
-      width: '320', height: '200', videoId: 'QvWsAIc5mO8', playerVars: vars,
-      events: {
-        onReady(event) {
-          ready = true;
-          status.textContent = '點音符或播放器即可播放。';
-          if (requested) event.target.playVideo();
-        },
-        onStateChange(event) {
-          const playing = event.data === YT.PlayerState.PLAYING;
-          setPlaying(playing);
-          if (playing) { status.textContent = '播放中 · 再點音符即可暫停'; requested = true; }
-          else if (event.data === YT.PlayerState.PAUSED) { status.textContent = '已暫停 · 點音符繼續播放'; requested = false; }
-          else if (event.data === YT.PlayerState.BUFFERING) status.textContent = '音樂緩衝中…';
-          else if (event.data === YT.PlayerState.ENDED) { status.textContent = '播放結束'; requested = false; }
-        },
-        onAutoplayBlocked() { fail('請直接點播放器的播放鍵開始聆聽。'); },
-        onError(event) {
-          panel.dataset.playbackError = String(event.data);
-          embeddingDenied = event.data === 101 || event.data === 150;
-          fail(embeddingDenied
-            ? '這支影片不允許在其他網站播放，請前往 YouTube 聆聽。'
-            : '目前無法嵌入播放，可用下方連結前往 YouTube 聆聽。');
-        }
+  function connectWidget() {
+    if (widget || !iframe) return;
+    widget = SC.Widget(iframe);
+    const events = SC.Widget.Events;
+    widget.bind(events.READY, () => {
+      clearTimeout(timeout);
+      ready = true;
+      status.textContent = '點音符或播放器即可播放。';
+      if (requested && !panel.hidden) {
+        status.textContent = '準備播放… 若未開始，請點播放器的播放鍵。';
+        widget.play();
       }
     });
+    widget.bind(events.PLAY, () => {
+      clearTimeout(timeout);
+      requested = true;
+      setPlaying(true);
+      status.textContent = '播放中 · 再點音符即可暫停';
+    });
+    widget.bind(events.PAUSE, () => {
+      requested = false;
+      setPlaying(false);
+      status.textContent = '已暫停 · 點音符繼續播放';
+    });
+    widget.bind(events.FINISH, () => {
+      requested = false;
+      setPlaying(false);
+      status.textContent = '播放結束 · 點音符重新聆聽';
+    });
+    widget.bind(events.ERROR, () => fail('目前無法播放，請使用下方連結前往 SoundCloud 聆聽。'));
   }
   function loadPlayer() {
-    if (window.YT?.Player) { createPlayer(); return; }
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = 'soundcloud-player';
+      iframe.title = 'SoundCloud：Surges / Orangestar，Yu 上傳';
+      iframe.allow = 'autoplay';
+      iframe.src = `https://w.soundcloud.com/player/?url=${encodeURIComponent(track)}&color=%2328533f&auto_play=false&show_artwork=true&show_user=true&visual=false`;
+      container.append(iframe);
+    }
+    if (window.SC?.Widget) { connectWidget(); return; }
     if (loading) return;
     loading = true;
-    window.onYouTubeIframeAPIReady = createPlayer;
     const api = document.createElement('script');
-    api.src = 'https://www.youtube.com/iframe_api';
+    api.src = 'https://w.soundcloud.com/player/api.js';
     api.async = true;
+    api.onload = connectWidget;
     api.onerror = () => {
       loading = false;
       api.remove();
-      fail('YouTube 未能載入，請再試一次或前往 YouTube 聆聽。');
+      fail('音符控制未能載入，請直接點播放器播放，或前往 SoundCloud 聆聽。');
     };
-    timeout = setTimeout(() => fail('YouTube 載入較久，請稍後再點音符或前往 YouTube 聆聽。'), 15000);
+    timeout = setTimeout(() => fail('載入較久，請稍候再點音符或直接操作 SoundCloud 播放器。'), 15000);
     document.head.append(api);
   }
   button.hidden = false;
   button.addEventListener('click', () => {
-    showPanel();
-    if (embeddingDenied) return;
+    panel.hidden = false;
+    button.setAttribute('aria-expanded', 'true');
     if (ready) {
-      if (player.getPlayerState() === YT.PlayerState.PLAYING || requested) {
+      if (playing || requested) {
         requested = false;
-        player.pauseVideo();
-        setPlaying(false);
-        status.textContent = '已暫停 · 點音符繼續播放';
+        widget.pause();
       } else {
         requested = true;
-        status.textContent = '準備播放…';
-        player.playVideo();
+        status.textContent = '準備播放… 若未開始，請點播放器的播放鍵。';
+        widget.play();
       }
     } else {
       requested = !requested;
-      status.textContent = requested ? '正在載入 YouTube 音樂…' : '已取消播放，播放器仍會載入。';
+      status.textContent = requested ? '正在載入 SoundCloud 音樂…' : '已取消播放，播放器仍會載入。';
       loadPlayer();
     }
   });
   function closePanel() {
     requested = false;
-    if (ready) player.pauseVideo();
+    if (widget) widget.pause();
+    // If the API failed, unload the iframe so a native playback cannot continue unseen.
+    if (!ready && iframe) {
+      clearTimeout(timeout);
+      if (widget) { widget.unbind(SC.Widget.Events.READY); widget = undefined; }
+      iframe.remove();
+      iframe = undefined;
+    }
     setPlaying(false);
     panel.hidden = true;
     button.setAttribute('aria-expanded', 'false');

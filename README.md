@@ -29,11 +29,11 @@ npx --yes serve .
 
 ## 背景音樂
 
-右下角音符按鈕可播放或暫停使用者指定的 Orangestar〈Surges〉（YouTube 影片 `QvWsAIc5mO8`）。首次點擊才載入 YouTube IFrame API 與可見播放器，不自動播放；播放期間保留 YouTube 影像與控制列。關閉播放器或按 Escape 會暫停音樂。歌曲以原影片嵌入，不下載或另存音訊。
+右下角音符按鈕連接 [SoundCloud 上 Yu 分享的〈Surges / Orangestar〉](https://soundcloud.com/yuun_191224/surges-orangestar)，使用官方 Widget API 控制播放與暫停，保留可見的音軌播放器與來源連結。
 
-若瀏覽器限制播放，請點播放器的播放鍵；影片限制嵌入或無法載入時，可使用面板中的 YouTube 連結。本機測試請使用 HTTP 伺服器，直接以 `file://` 開啟可能因缺少網站來源而無法播放。
+首次點音符才載入播放器與 API，不會在進站時自動載入或播放。再點音符可暫停，關閉面板或按 Escape 也會暫停；若瀏覽器限制播放，可直接點 SoundCloud 播放器的播放鍵。音軌經原平台串流，沒有下載或另存音訊。
 
-2026-11-02 本機實測：這支指定影片回傳 YouTube 錯誤 150（不允許嵌入播放），因此目前面板提供原影片連結，無法在站內播放這首歌。若要直接背景播放，需改用允許嵌入的影片，或提供可供網站使用的音訊檔案。
+原先指定的 YouTube 影片因錯誤 150（不允許嵌入）改為使用 SoundCloud。平台的音軌可用性仍由上傳者與 SoundCloud 決定。
 
 ## 個人心得
 
