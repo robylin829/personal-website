@@ -222,6 +222,9 @@ reducedMotion.addEventListener('change', () => {
   const close = document.querySelector('#music-close');
   const status = document.querySelector('#music-status');
   const container = document.querySelector('#soundcloud-container');
+  const expand = document.querySelector('#music-expand');
+  const miniStatus = document.querySelector('#music-mini-status');
+  const mobileMusic = window.matchMedia('(max-width: 760px)');
   if (!button || !panel || !container) return;
   let widget;
   let iframe;
@@ -234,8 +237,26 @@ reducedMotion.addEventListener('change', () => {
   let userControlled = false;
   let autoAttempted = false;
 
+  function setCompact(compact) {
+    panel.classList.toggle('is-compact', compact);
+    expand.setAttribute('aria-expanded', String(!compact));
+    expand.setAttribute('aria-label', compact ? '展開完整音樂播放器' : '收合音樂播放器');
+    expand.textContent = compact ? '展開' : '收合';
+  }
+  function openPanel() {
+    if (panel.hidden) setCompact(mobileMusic.matches);
+    panel.hidden = false;
+    button.setAttribute('aria-expanded', 'true');
+    document.body.classList.toggle('has-music-dock', mobileMusic.matches);
+  }
+  expand.addEventListener('click', () => setCompact(!panel.classList.contains('is-compact')));
+  mobileMusic.addEventListener('change', () => {
+    setCompact(mobileMusic.matches);
+    document.body.classList.toggle('has-music-dock', mobileMusic.matches && !panel.hidden);
+  });
   function setPlaying(value) {
     playing = value;
+    miniStatus.textContent = value ? '播放中 · ♫ 可暫停' : '點 ♫ 播放';
     button.setAttribute('aria-pressed', String(value));
     const label = value ? '暫停背景音樂' : '播放背景音樂';
     button.setAttribute('aria-label', label);
@@ -325,8 +346,7 @@ reducedMotion.addEventListener('change', () => {
   button.addEventListener('click', () => {
     userControlled = true;
     clearTimeout(playbackTimeout);
-    panel.hidden = false;
-    button.setAttribute('aria-expanded', 'true');
+    openPanel();
     if (ready) {
       if (playing || requested) {
         requested = false;
@@ -355,6 +375,7 @@ reducedMotion.addEventListener('change', () => {
     }
     setPlaying(false);
     panel.hidden = true;
+    document.body.classList.remove('has-music-dock');
     button.setAttribute('aria-expanded', 'false');
     button.focus();
   }
@@ -367,8 +388,7 @@ reducedMotion.addEventListener('change', () => {
       if (autoAttempted || userControlled || playing || requested) return;
       autoAttempted = true;
       requested = true;
-      panel.hidden = false;
-      button.setAttribute('aria-expanded', 'true');
+      openPanel();
       status.textContent = '讓音樂陪你看山，正在準備播放…';
       if (ready) attemptPlayback();
       else loadPlayer();
