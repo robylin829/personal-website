@@ -213,3 +213,117 @@ if (context) {
 reducedMotion.addEventListener('change', () => {
   if (reducedMotion.matches) activeAnimations.forEach(animation => animation.cancel());
 });
+
+// Load YouTube only after a visitor requests music. Keep its player visible while playing.
+(() => {
+  const button = document.querySelector('#music-toggle');
+  const panel = document.querySelector('#music-panel');
+  const close = document.querySelector('#music-close');
+  const status = document.querySelector('#music-status');
+  if (!button || !panel) return;
+  let player;
+  let ready = false;
+  let requested = false;
+  let loading = false;
+  let embeddingDenied = false;
+  let timeout;
+
+  function setPlaying(playing) {
+    button.setAttribute('aria-pressed', String(playing));
+    const label = embeddingDenied ? '開啟音樂面板' : playing ? '暫停背景音樂' : '播放背景音樂';
+    button.setAttribute('aria-label', label);
+    button.title = label;
+    button.classList.toggle('is-playing', playing);
+  }
+  function showPanel() {
+    panel.hidden = false;
+    button.setAttribute('aria-expanded', 'true');
+  }
+  function fail(message) {
+    clearTimeout(timeout);
+    requested = false;
+    setPlaying(false);
+    status.textContent = message;
+  }
+  function createPlayer() {
+    clearTimeout(timeout);
+    if (player) return;
+    const vars = { playsinline: 1, controls: 1, loop: 1, playlist: 'QvWsAIc5mO8' };
+    if (location.protocol === 'https:' || location.protocol === 'http:') vars.origin = location.origin;
+    player = new YT.Player('youtube-player', {
+      width: '320', height: '200', videoId: 'QvWsAIc5mO8', playerVars: vars,
+      events: {
+        onReady(event) {
+          ready = true;
+          status.textContent = '點音符或播放器即可播放。';
+          if (requested) event.target.playVideo();
+        },
+        onStateChange(event) {
+          const playing = event.data === YT.PlayerState.PLAYING;
+          setPlaying(playing);
+          if (playing) { status.textContent = '播放中 · 再點音符即可暫停'; requested = true; }
+          else if (event.data === YT.PlayerState.PAUSED) { status.textContent = '已暫停 · 點音符繼續播放'; requested = false; }
+          else if (event.data === YT.PlayerState.BUFFERING) status.textContent = '音樂緩衝中…';
+          else if (event.data === YT.PlayerState.ENDED) { status.textContent = '播放結束'; requested = false; }
+        },
+        onAutoplayBlocked() { fail('請直接點播放器的播放鍵開始聆聽。'); },
+        onError(event) {
+          panel.dataset.playbackError = String(event.data);
+          embeddingDenied = event.data === 101 || event.data === 150;
+          fail(embeddingDenied
+            ? '這支影片不允許在其他網站播放，請前往 YouTube 聆聽。'
+            : '目前無法嵌入播放，可用下方連結前往 YouTube 聆聽。');
+        }
+      }
+    });
+  }
+  function loadPlayer() {
+    if (window.YT?.Player) { createPlayer(); return; }
+    if (loading) return;
+    loading = true;
+    window.onYouTubeIframeAPIReady = createPlayer;
+    const api = document.createElement('script');
+    api.src = 'https://www.youtube.com/iframe_api';
+    api.async = true;
+    api.onerror = () => {
+      loading = false;
+      api.remove();
+      fail('YouTube 未能載入，請再試一次或前往 YouTube 聆聽。');
+    };
+    timeout = setTimeout(() => fail('YouTube 載入較久，請稍後再點音符或前往 YouTube 聆聽。'), 15000);
+    document.head.append(api);
+  }
+  button.hidden = false;
+  button.addEventListener('click', () => {
+    showPanel();
+    if (embeddingDenied) return;
+    if (ready) {
+      if (player.getPlayerState() === YT.PlayerState.PLAYING || requested) {
+        requested = false;
+        player.pauseVideo();
+        setPlaying(false);
+        status.textContent = '已暫停 · 點音符繼續播放';
+      } else {
+        requested = true;
+        status.textContent = '準備播放…';
+        player.playVideo();
+      }
+    } else {
+      requested = !requested;
+      status.textContent = requested ? '正在載入 YouTube 音樂…' : '已取消播放，播放器仍會載入。';
+      loadPlayer();
+    }
+  });
+  function closePanel() {
+    requested = false;
+    if (ready) player.pauseVideo();
+    setPlaying(false);
+    panel.hidden = true;
+    button.setAttribute('aria-expanded', 'false');
+    button.focus();
+  }
+  close.addEventListener('click', closePanel);
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !panel.hidden) closePanel();
+  });
+})();
